@@ -1,0 +1,26 @@
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+const protect = async (req, res, next) => {
+  let token = req.headers.authorization?.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Not authorized' });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role === 'root') {
+      req.user = { _id: 'root', role: 'root', name: 'Root' };
+    } else {
+      req.user = await User.findById(decoded.id).select('-password');
+      if (!req.user) return res.status(401).json({ message: 'User not found' });
+    }
+    next();
+  } catch {
+    res.status(401).json({ message: 'Token invalid' });
+  }
+};
+
+const requireRole = (...roles) => (req, res, next) => {
+  if (!roles.includes(req.user.role)) return res.status(403).json({ message: 'Access denied' });
+  next();
+};
+
+module.exports = { protect, requireRole };
