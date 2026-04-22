@@ -164,13 +164,14 @@ router.post('/notices', async (req, res) => {
     const { title, content, type } = req.body;
     const notice = await Notice.create({
       title, content, type,
-      postedBy: req.user._id,
-      postedByName: req.user.name
+      postedBy: req.user.role === 'root' ? null : req.user._id,
+      postedByName: req.user.role === 'root' ? 'Root Admin' : req.user.name
     });
     res.status(201).json({ message: 'Notice posted', notice });
-  } catch (err) { res.status(400).json({ message: err.message }); }
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
-
 router.put('/notices/:id', async (req, res) => {
   try {
     await Notice.findByIdAndUpdate(req.params.id, req.body);
